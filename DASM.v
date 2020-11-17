@@ -223,8 +223,9 @@ module DASM (
 	wire [16*8-1:0] _rt_rs_imm = {srt, srs, simm};
 	wire [16*8-1:0] _rs_rt_imm = {srs, srt, simm};
 	wire [16*8-1:0] _rs_imm = {srs, simm};
+	wire [16*8-1:0] _rt_imm = {srt, simm};
 	wire [16*8-1:0] _rs_rt = {srs, srt};
-	wire [16*8-1:0] _target = {"0", get_hex(target[25:22]), get_hex(target[21:18]),
+	wire [16*8-1:0] _target = {" 0", get_hex(target[25:22]), get_hex(target[21:18]),
 									get_hex(target[17:14]), get_hex(target[13:10]),
 									get_hex(target[9:6]),   get_hex(target[5:2]), get_hex({target[1:0], 2'b0})};
 	wire [16*8-1:0] _rd_rs = {srd, srs};
@@ -252,7 +253,7 @@ module DASM (
 				sb ? {"sb", _rt_off_base} :
 				sh ? {"sh", _rt_off_base} :
 				sw ? {"sw", _rt_off_base} :
-				lui ? {"lui", _rt_off_base} :
+				lui ? {"lui", _rt_imm} :
 				add ? {"add", _rd_rs_rt} :
 				addi ? {"addi", _rt_rs_imm} :
 				addiu ? {"addiu", _rt_rs_imm} :
