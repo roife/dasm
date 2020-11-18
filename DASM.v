@@ -79,9 +79,11 @@
 `define xori	6'b001110
 
 module DASM (
+	input [31:0] pc,
     input [31:0] instr,
 	input reg_name,
-    output [24*8-1:0] asm
+	input imm_as_dec,
+    output [32*8-1:0] asm
 );
 
 	 wire [5:0]func=instr[5:0], op=instr[31:26];
@@ -209,9 +211,15 @@ module DASM (
 	endfunction
 
 	wire [7:0] sp = 8'b0010_0000;
+
 	wire [4*8-1:0] srs = {sp, get_reg(rs)}, srd = {sp, get_reg(rd)}, srt = {sp, get_reg(rt)};
 	wire [4*8-1:0] soff = {get_hex(imm[15:12]), get_hex(imm[11:8]), get_hex(imm[7:4]), get_hex(imm[3:0])};
 	wire [5*8-1:0] simm = {sp, get_hex(imm[15:12]), get_hex(imm[11:8]), get_hex(imm[7:4]), get_hex(imm[3:0])};
+	wire [31:0] imm32_signed = imm[15] ? -{{16{imm[15]}}, imm} : {16'b0, imm};
+	wire [6*8-1:0] simm_dec = {sp, get_hex(imm/10000%10), get_hex(imm/1000%10), get_hex(imm/100%10), get_hex(imm/10%10), get_hex(imm%10)};
+	wire [7*8-1:0] simm_dec_signed = {sp, imm[15] ? "-" : " ",
+											get_hex(imm32_signed/10000%10), get_hex(imm32_signed/1000%10),
+											get_hex(imm32_signed/100%10), get_hex(imm32_signed/10%10), get_hex(imm32_signed%10)};
 
 	wire [4*8-1:0] ssha = {sp, get_hex(sha)};
 	// wire [10*8-1:0] saddr = {sp, get_, "_"}
@@ -220,10 +228,20 @@ module DASM (
 	wire [16*8-1:0] _rd_rs_rt = {srd, srs, srt};
 	wire [16*8-1:0] _rd_rt_rs = {srd, srt, srs};
 	wire [16*8-1:0] _rd_rt_sha = {srd, srt, ssha};
-	wire [16*8-1:0] _rt_rs_imm = {srt, srs, simm};
-	wire [16*8-1:0] _rs_rt_imm = {srs, srt, simm};
-	wire [16*8-1:0] _rs_imm = {srs, simm};
-	wire [16*8-1:0] _rt_imm = {srt, simm};
+	wire [16*8-1:0] _rt_rs_imm = {srt, srs, imm_as_dec ? simm_dec : simm};
+	wire [16*8-1:0] _rt_rs_imm_signed = {srt, srs, imm_as_dec ? simm_dec_signed : simm};
+	wire [31:0] branch_npc = pc + 4 + {{14{imm[15]}}, imm, 2'b0};
+	wire [24*8-1:0] _rs_rt_imm = {srs, srt, imm_as_dec ? simm_dec : simm, "[",
+														get_hex(branch_npc[31:28]), get_hex(branch_npc[27:24]),
+														get_hex(branch_npc[23:20]), get_hex(branch_npc[19:16]),
+														get_hex(branch_npc[15:12]), get_hex(branch_npc[11:8]),
+														get_hex(branch_npc[7:4]), get_hex(branch_npc[3:0]), "]"};
+	wire [20*8-1:0] _rs_imm = {srs, imm_as_dec ? simm_dec : simm, "[",
+												get_hex(branch_npc[31:28]), get_hex(branch_npc[27:24]),
+											    get_hex(branch_npc[23:20]), get_hex(branch_npc[19:16]),
+											    get_hex(branch_npc[15:12]), get_hex(branch_npc[11:8]),
+											    get_hex(branch_npc[7:4]), get_hex(branch_npc[3:0]), "]"}; // branch
+	wire [16*8-1:0] _rt_imm = {srt, imm_as_dec ? simm_dec : simm};
 	wire [16*8-1:0] _rs_rt = {srs, srt};
 	wire [16*8-1:0] _target = {" 0", get_hex(target[25:22]), get_hex(target[21:18]),
 									get_hex(target[17:14]), get_hex(target[13:10]),
@@ -255,8 +273,8 @@ module DASM (
 				sw ? {"sw", _rt_off_base} :
 				lui ? {"lui", _rt_imm} :
 				add ? {"add", _rd_rs_rt} :
-				addi ? {"addi", _rt_rs_imm} :
-				addiu ? {"addiu", _rt_rs_imm} :
+				addi ? {"addi", _rt_rs_imm_signed} :
+				addiu ? {"addiu", _rt_rs_imm_signed} :
 				addu ? {"addu", _rd_rs_rt} :
 				And ? {"And", _rd_rs_rt} :
 				andi ? {"andi", _rt_rs_imm} :
@@ -274,8 +292,8 @@ module DASM (
 				sll ? {"sll", _rd_rt_sha} :
 				sllv ? {"sllv", _rd_rt_rs} :
 				slt ? {"slt", _rd_rs_rt} :
-				slti ? {"slti", _rt_rs_imm} :
-				sltiu ? {"sltiu", _rt_rs_imm} :
+				slti ? {"slti", _rt_rs_imm_signed} :
+				sltiu ? {"sltiu", _rt_rs_imm_signed} :
 				sltu ? {"sltu", _rd_rs_rt} :
 				sra ? {"sra", _rd_rt_sha} :
 				srav ? {"srav", _rd_rt_rs} :
