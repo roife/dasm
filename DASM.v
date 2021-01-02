@@ -77,6 +77,9 @@
 `define xorop	6'b000000
 `define xorfu	6'b100110
 `define xori	6'b001110
+`define OP_mtc0    11'b010000_00100
+`define OP_mfc0    11'b010000_00000
+`define OP_eret    32'b010000_1000_0000_0000_0000_0000_011000
 
 module DASM (
 	input [31:0] pc,
@@ -145,6 +148,10 @@ module DASM (
 	 wire subu=(op==`subuop)&(func==`subufu);
 	 wire Xor=(op==`xorop)&(func==`xorfu);
 	 wire xori=(op==`xori);
+
+	wire mtc0  = (instr[31:21] == `OP_mtc0);
+    wire mfc0  = (instr[31:21] == `OP_mfc0);
+    wire eret  = (instr == `OP_eret);
 
 	function [8*3-1:0] get_reg;
 		input [4:0] num;
@@ -311,6 +318,9 @@ module DASM (
 				subu ? {"subu", _rd_rs_rt} :
 				Xor ? {"Xor", _rd_rs_rt} :
 				xori ? {"xori", _rt_rs_imm} :
+				mtc0 ? {"mtc0", _rt_rd} :
+				mfc0 ? {"mfc0", _rt_rd} :
+				eret ? {"eret"} :
 				"No Instr");
 
 endmodule
