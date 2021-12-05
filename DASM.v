@@ -297,8 +297,8 @@ module DASM (
 				divu ? {"divu", _rs_rt} :
 				mfhi ? {"mfhi", _rd} :
 				mflo ? {"mflo", _rd} :
-				mthi ? {"mthi", _rd} :
-				mtlo ? {"mtlo", _rd} :
+				mthi ? {"mthi", _rs} :
+				mtlo ? {"mtlo", _rs} :
 				mult ? {"mult", _rs_rt} :
 				multu ? {"multu", _rs_rt} :
 				Nor ? {"Nor", _rd_rs_rt} :
