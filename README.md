@@ -22,3 +22,9 @@ DASM Dasm(
     .asm()
 );
 ```
+
+## 效果示例
+
+在五级流水线 CPU 的 D, E, M, W 四个流水级分别实例化一个 `DASM` 模块，反汇编每个流水级上的指令，波形展示效果如下（反汇编结果的 `asm` 信号以 ASCII 模式显示）：
+
+![wave](assets/wave.svg)
